@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.Security.Principal.Windows" Version="6.0.0-preview.5.21301.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="bin\Debug\net5.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="bin\Debug\net5.0\Storage\A\file.txt" />
+      <None Include="bin\Debug\net5.0\Storage\A\file1.txt" />
+      <None Include="bin\Debug\net5.0\Storage\B\file.txt" />
+      <None Include="bin\Debug\net5.0\Storage\C\file.txt" />
+      <None Include="bin\Debug\net5.0\Storage\D\file.txt" />
+      <None Include="bin\Debug\net5.0\Storage\E\file.txt" />
+    </ItemGroup>
+
+</Project>
