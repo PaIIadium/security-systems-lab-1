@@ -22,4 +22,8 @@
       <None Include="bin\Debug\net5.0\Storage\E\file.txt" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="bin\Debug\net5.0\Storage\System\credentials_journal.txt" />
+    </ItemGroup>
+
 </Project>
