@@ -6,6 +6,7 @@
         Cat,
         Touch,
         Rm,
-        Execute
+        Execute,
+        Register
     }
 }

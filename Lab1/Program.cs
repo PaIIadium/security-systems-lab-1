@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Runtime.Versioning;
     using System.Security.Principal;
+    using Registration;
 
     class Program
     {
@@ -18,6 +19,7 @@
                     {Disk.A, new List<Right> {Right.Read, Right.Write, Right.Execute}},
                     {Disk.B, new List<Right> {Right.Read, Right.Write, Right.Execute}},
                     {Disk.C, new List<Right> {Right.Read, Right.Write, Right.Execute}},
+                    {Disk.System, new List<Right> {Right.Read, Right.Write, Right.Execute}},
                     {Disk.None, new List<Right>()}
                 }
             },
@@ -27,6 +29,7 @@
                     {Disk.A, new List<Right> {Right.Read}},
                     {Disk.B, new List<Right>()},
                     {Disk.C, new List<Right> {Right.Read, Right.Write}},
+                    {Disk.System, new List<Right>()},
                     {Disk.None, new List<Right>()}
                 }
             }
@@ -44,58 +47,55 @@
         [SupportedOSPlatform("windows")]
         private static void Main(string[] args)
         {
+            var inputValidator = new InputValidator();
             var inputCommand = args[0];
 
-            if (ValidateCommand(inputCommand, out var command))
+            if (inputValidator.ValidateCommand(inputCommand, out var command))
             {
-                if (CommandsRights.TryGetValue(command, out var right))
-                {
-                    var role = GetRole();
-                    var path = args[1];
-                    var disk = GetDisk(path);
-                    
-                    var isRoleGrantedAccess = IsRoleGrantedAccess(role, disk, right);
-                    if (!isRoleGrantedAccess)
-                    {
-                        Console.WriteLine("You don't have permissions to perform this operation");
-                        return;
-                    }
-                    
-                    if (args.Length == 3) PerformOperation(command, path, args[2]);
-                    else PerformOperation(command, path);
-                    return;
-                }
-
-                Console.WriteLine($"Command {inputCommand} has not specified rights");
+                HandleInput(command, args);
                 return;
             }
 
             Console.WriteLine($"Unknown command: {inputCommand}");
         }
 
-        private static bool ValidateCommand(string input, out Command command)
+        [SupportedOSPlatform("windows")]
+        private static void HandleInput(Command command, string[] args)
         {
-            switch (input)
+            var role = GetRole();
+            var path = args[1];
+            
+            if (CommandsRights.TryGetValue(command, out var right))
             {
-                case "ls":
-                    command = Command.Ls;
-                    return true;
-                case "cat":
-                    command = Command.Cat;
-                    return true;
-                case "touch":
-                    command = Command.Touch;
-                    return true;
-                case "rm":
-                    command = Command.Rm;
-                    return true;
-                case "exec":
-                    command = Command.Execute;
-                    return true;
-                default:
-                    command = default;
-                    return false;
+                var disk = GetDisk(path);
+                    
+                var isRoleGrantedAccess = IsRoleGrantedAccess(role, disk, right);
+                if (!isRoleGrantedAccess)
+                {
+                    Console.WriteLine("You don't have permissions to perform this operation");
+                    return;
+                }
+                
+                if (args.Length == 3) PerformOperation(command, path, args[2]);
+                else PerformOperation(command, path);
+                return;
             }
+            
+            if (command == Command.Register)
+            {
+                var isRoleGrantedAccess = IsRoleGrantedAccess(role, Disk.System, Right.Write);
+                if (!isRoleGrantedAccess)
+                {
+                    Console.WriteLine("You don't have permissions to perform this operation");
+                    return;
+                }
+
+                var userRegistrar = new UserRegistrar();
+                userRegistrar.CreateUser(args[1], args[2]);
+                return;
+            }
+
+            Console.WriteLine("Command has not specified rights");
         }
 
         [SupportedOSPlatform("windows")]
