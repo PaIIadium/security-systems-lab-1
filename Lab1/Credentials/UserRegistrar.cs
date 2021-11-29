@@ -7,9 +7,9 @@
     {
         private readonly CredentialsJournalHolder credentialsJournalHolder;
 
-        public UserRegistrar()
+        public UserRegistrar(CredentialsJournalHolder credentialsJournalHolder)
         {
-            credentialsJournalHolder = new CredentialsJournalHolder();
+            this.credentialsJournalHolder = credentialsJournalHolder;
         }
         public void CreateUser(string login, string password)
         {

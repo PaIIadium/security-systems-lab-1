@@ -24,6 +24,7 @@
 
     <ItemGroup>
       <Content Include="bin\Debug\net5.0\Storage\System\credentials_journal.txt" />
+      <Content Include="bin\Debug\net5.0\Storage\System\operations_journal.txt" />
     </ItemGroup>
 
 </Project>

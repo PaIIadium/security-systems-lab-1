@@ -11,10 +11,13 @@
         private Dictionary<string, int> usersMistakes = new ();
 
         private readonly CredentialsJournalHolder credentialsJournalHolder;
+        private readonly OperationsJournalHolder operationsJournalHolder;
         
-        public Authenticator()
+        public Authenticator(CredentialsJournalHolder credentialsJournalHolder, 
+            OperationsJournalHolder operationsJournalHolder)
         {
-            credentialsJournalHolder = new CredentialsJournalHolder();
+            this.credentialsJournalHolder = credentialsJournalHolder;
+            this.operationsJournalHolder = operationsJournalHolder;
         }
         
         public async Task<string> Authenticate()
@@ -35,6 +38,8 @@
                         break;
                     }
                     Console.WriteLine("Login or password is incorrect. Try again");
+                    operationsJournalHolder.AddRecord(
+                        "", DateTime.Now.ToString(), "Authentication", string.Join(';', inputCredentials));
                 }
                 else
                 {
@@ -67,6 +72,7 @@
 
             usersMistakes.Remove(login);
             Console.WriteLine("Your account has been blocked. Contact with administrator");
+            operationsJournalHolder.AddRecord(login, DateTime.Now.ToString(), "Blocking account");
         }
     }
 }

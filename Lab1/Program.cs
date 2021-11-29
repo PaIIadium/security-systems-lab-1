@@ -19,6 +19,9 @@
 
         private static int userInputOffset;
         
+        private static CredentialsJournalHolder credentialsJournalHolder;
+        private static OperationsJournalHolder operationsJournalHolder;
+
         private static readonly Dictionary<Role, Dictionary<Disk, List<Right>>> RolesRights = new()
         {
             {
@@ -54,7 +57,9 @@
 
         private static async Task Main(string[] args)
         {
-            authenticator = new Authenticator();
+            credentialsJournalHolder = new CredentialsJournalHolder();
+            operationsJournalHolder = new OperationsJournalHolder();
+            authenticator = new Authenticator(credentialsJournalHolder, operationsJournalHolder);
             questionsController = new QuestionsController();
             questionsController.OnTimeToAskQuestions += OnTimeToAskQuestions;
             Authorize();
@@ -113,6 +118,7 @@
                     }
                     authenticator.QuestionMistakeHandler(login);
                     Console.WriteLine("Answer is wrong. You need to log in again");
+                    operationsJournalHolder.AddRecord(login, DateTime.Now.ToString(), "Wrong answer");
                     break;
                 }
 
@@ -137,10 +143,12 @@
             {
                 var disk = GetDisk(path);
                     
-                var isRoleGrantedAccess = IsRoleGrantedAccess(role, disk, right);
+                var isRoleGrantedAccess = IsRoleGrantedAccess(disk, right);
                 if (!isRoleGrantedAccess)
                 {
                     Console.WriteLine("You don't have permissions to perform this operation");
+                    operationsJournalHolder.AddRecord(
+                        login, DateTime.Now.ToString(), command.ToString(), string.Join(';', args[1..]));
                     return;
                 }
                 
@@ -151,14 +159,16 @@
             
             if (command == Command.Register)
             {
-                var isRoleGrantedAccess = IsRoleGrantedAccess(role, Disk.System, Right.Write);
+                var isRoleGrantedAccess = IsRoleGrantedAccess(Disk.System, Right.Write);
                 if (!isRoleGrantedAccess)
                 {
                     Console.WriteLine("You don't have permissions to perform this operation");
+                    operationsJournalHolder.AddRecord(
+                        login, DateTime.Now.ToString(), command.ToString(), string.Join(';', args[1..]));
                     return;
                 }
 
-                var userRegistrar = new UserRegistrar();
+                var userRegistrar = new UserRegistrar(credentialsJournalHolder);
                 userRegistrar.CreateUser(args[1], args[2]);
                 return;
             }
@@ -166,7 +176,7 @@
             Console.WriteLine("Command has not specified rights");
         }
 
-        private static bool IsRoleGrantedAccess(Role role, Disk disk, Right right)
+        private static bool IsRoleGrantedAccess(Disk disk, Right right)
         {
             return RolesRights[role][disk].Contains(right);
         }
