@@ -6,7 +6,7 @@
 
     public class CredentialsJournalHolder
     {
-        private const string CredentialsPath = "./Storage/System/credentials_journal.txt";
+        private const string Path = "./Storage/System/credentials_journal.txt";
         public List<UserRecord> Journal;
 
         public CredentialsJournalHolder()
@@ -16,9 +16,9 @@
 
         private void LoadJournalFromDisk()
         {
-            if (!File.Exists(CredentialsPath)) return;
+            if (!File.Exists(Path)) return;
             
-            var credentialsList = File.ReadLines(CredentialsPath)
+            var credentialsList = File.ReadLines(Path)
                 .Select(line => line.Split(","))
                 .Select(userInfo => new UserRecord
                 {
@@ -33,7 +33,7 @@
         public void SaveOnDisk()
         {
             var lines = Journal.Select(userInfo => $"{userInfo.Login},{userInfo.Password}");
-            File.WriteAllLines(CredentialsPath, lines);
+            File.WriteAllLines(Path, lines);
         }
     }
 
