@@ -1,4 +1,4 @@
-﻿namespace Lab1.Registration
+﻿namespace Lab1.Credentials
 {
     using System.Collections.Generic;
     using System.IO;

@@ -5,12 +5,20 @@
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Runtime.Versioning;
-    using System.Security.Principal;
-    using Registration;
+    using System.Threading.Tasks;
+    using Credentials;
 
     class Program
     {
+        private static Authenticator authenticator;
+        private static QuestionsController questionsController;
+        private static Role role;
+        private static string login;
+        private static bool isTimeToAskQuestions;
+        private static int correctAnswer;
+
+        private static int userInputOffset;
+        
         private static readonly Dictionary<Role, Dictionary<Disk, List<Right>>> RolesRights = new()
         {
             {
@@ -44,25 +52,85 @@
             {Command.Execute, Right.Execute}
         };
 
-        [SupportedOSPlatform("windows")]
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            var inputValidator = new InputValidator();
-            var inputCommand = args[0];
-
-            if (inputValidator.ValidateCommand(inputCommand, out var command))
-            {
-                HandleInput(command, args);
-                return;
-            }
-
-            Console.WriteLine($"Unknown command: {inputCommand}");
+            authenticator = new Authenticator();
+            questionsController = new QuestionsController();
+            questionsController.OnTimeToAskQuestions += OnTimeToAskQuestions;
+            Authorize();
+        }
+        
+        private static void OnTimeToAskQuestions()
+        {
+            userInputOffset = Console.CursorLeft;
+            ClearCurrentConsoleLine();
+            correctAnswer = questionsController.AskQuestion();
+            isTimeToAskQuestions = true;
+        }
+        
+        private static void ClearCurrentConsoleLine()
+        {
+            var currentLineCursor = Console.CursorTop;
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(new string(' ', Console.WindowWidth)); 
+            Console.SetCursorPosition(0, currentLineCursor);
         }
 
-        [SupportedOSPlatform("windows")]
+        private static async void Authorize()
+        {
+            await Authenticate();
+            RunApplicationLoop();
+        }
+
+        private static async Task Authenticate()
+        {
+            login = await authenticator.Authenticate();
+            role = login == "admin" ? Role.Admin : Role.User;
+            
+            questionsController.RunQuestionsTimer();
+            Console.WriteLine("Successful authorization");
+        }
+
+        private static void RunApplicationLoop()
+        {
+            var inputValidator = new InputValidator();
+            while (true)
+            {
+                var input = Console.ReadLine();
+                if (isTimeToAskQuestions)
+                {
+                    isTimeToAskQuestions = false;
+                    input = input?[userInputOffset..];
+                    var isAnswerCorrect = questionsController.ValidateAnswer(correctAnswer, input);
+                    if (isAnswerCorrect)
+                    {
+                        var areAnswersCorrect = questionsController.AskQuestions();
+                        if (areAnswersCorrect)
+                        {
+                            questionsController.RunQuestionsTimer();
+                            continue;
+                        }
+                    }
+                    authenticator.QuestionMistakeHandler(login);
+                    Console.WriteLine("Answer is wrong. You need to log in again");
+                    break;
+                }
+
+                var inputCommand = input?.Split(" ");
+                if (inputValidator.ValidateCommand(inputCommand?[0], out var command))
+                {
+                    HandleInput(command, inputCommand);
+                    continue;
+                }
+
+                Console.WriteLine($"Unknown command: {inputCommand?[0]}");
+            }
+
+            Authorize();
+        }
+
         private static void HandleInput(Command command, string[] args)
         {
-            var role = GetRole();
             var path = args[1];
             
             if (CommandsRights.TryGetValue(command, out var right))
@@ -96,14 +164,6 @@
             }
 
             Console.WriteLine("Command has not specified rights");
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static Role GetRole()
-        {
-            using var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator) ? Role.Admin : Role.User;
         }
 
         private static bool IsRoleGrantedAccess(Role role, Disk disk, Right right)

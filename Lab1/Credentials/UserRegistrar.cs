@@ -1,33 +1,38 @@
-﻿namespace Lab1.Registration
+﻿namespace Lab1.Credentials
 {
     using System;
     using System.Collections.Generic;
 
     public class UserRegistrar
     {
-        public bool CreateUser(string login, string password)
+        private readonly CredentialsJournalHolder credentialsJournalHolder;
+
+        public UserRegistrar()
         {
-            var journalHolder = new CredentialsJournalHolder();
-            var isUserExist = CheckCollision(journalHolder.Journal, login);
+            credentialsJournalHolder = new CredentialsJournalHolder();
+        }
+        public void CreateUser(string login, string password)
+        {
+            var isUserExist = CheckCollision(credentialsJournalHolder.Journal, login);
             if (isUserExist)
             {
                 Console.WriteLine("User with this login already exists");
-                return false;
+                return;
             }
 
             if (!ValidatePassword(password))
             {
                 Console.WriteLine("Password is invalid");
-                return false;
+                return;
             }
             
-            journalHolder.Journal.Add(new UserRecord
+            credentialsJournalHolder.Journal.Add(new UserRecord
             {
                 Login = login,
                 Password = password
             });
-            journalHolder.SaveOnDisk();
-            return true;
+            credentialsJournalHolder.SaveOnDisk();
+            Console.WriteLine("User has been registered");
         }
 
         private bool CheckCollision(List<UserRecord> journal, string login)
